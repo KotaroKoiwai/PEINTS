@@ -114,17 +114,17 @@ class Run():
     def re_process(self, spacegroup, xds_dir):
         reprocess_flag = False
         if self.data_name != "aimless.mtz":
-            if spacegroup == "Spacegroup_suggested_by_PReMo":
+            if spacegroup == "Spacegroup_suggested_by_POINTLESS":
                 spacegroup = "none"
-            elif spacegroup != "Spacegroup_suggested_by_PReMo":
+            elif spacegroup != "Spacegroup_suggested_by_POINTLESS":
                 files = os.listdir(os.path.join("../", os.path.basename(xds_dir)))
                 self.logger.debug(files)
             reprocess_flag = self.pointless_aimless(spacegroup, xds_dir)
 
         else:
-            if spacegroup == "Spacegroup_suggested_by_PReMo":
+            if spacegroup == "Spacegroup_suggested_by_POINTLESS":
                 self.logger.debug(xds_dir+"   :   Don't re_processing by POINTLESS")
-            elif spacegroup != "Spacegroup_suggested_by_PReMo":
+            elif spacegroup != "Spacegroup_suggested_by_POINTLESS":
                 files = os.listdir(os.path.join("../", os.path.basename(xds_dir)))
                 self.logger.debug(files)
                 if not os.path.join("pointless.log") in files:

@@ -101,7 +101,7 @@ def peints_argparse(args):
 
     parser.add_argument("-sg", "--spacegroup",
                         type=str,
-                        default="Spacegroup_suggested_by_PReMo",
+                        default="Spacegroup_suggested_by_POINTLESS",
                         help='Spacegroup name: e.g. P212121')
 
     parser.add_argument("-data", "--data_name",
