@@ -25,9 +25,10 @@ $   cctbx.python <peints_directory>/peints_gui.py
   and will get images focusing the pseudoatom.
   
   Format:
-    <chainID>/<residue No.>/<atomID>
+  
+    [chainID]/[residue No.]/[atomID]
     or
-    <chainID>/<residue No.>/<atomID>_<chainID>/<residue No.>/<atomID>
+    [chainID]/[residue No.]/[atomID]_[chainID]/[residue No.]/[atomID]
   
   For example:
     A/110/CZ
@@ -49,26 +50,32 @@ $   cctbx.python <peints_directory>/peints_gui.py
 References:
 
   POINTLESS:
+  
     Evans P (2006) Scaling and assessment of data quality. 
     Acta Crystallogr Sect D Biol Crystallogr 62(1):72–82.
     
   AIMLESS:
+  
     Evans PR, Murshudov GN (2013) How good are my data and what is the resolution? 
     Acta Crystallogr Sect D Biol Crystallogr 69(7):1204–1214.
     
   MOLREP:
+  
     Vagin A, Teplyakov A (1997) MOLREP : an Automated Program for Molecular Replacement. 
     J Appl Crystallogr 30(6):1022–1025.
     
   REFMAC5:
+  
     Murshudov GN, Vagin AA, Dodson EJ (1997) Refinement of Macromolecular Structures by the Maximum-Likelihood Method. 
     Acta Crystallogr Sect D Biol Crystallogr 53(3):240–255.
     
   COOT:
+  
     Emsley P, Lohkamp B, Scott WG, Cowtan K (2010) Features and development of Coot. 
     Acta Crystallogr Sect D Biol Crystallogr 66(4):486–501.
     
-  PHENIX.REFINE
+  PHENIX.REFINE:
+  
     Afonine P V, et al. (2012) Towards automated crystallographic structure refinement with phenix.refine. 
     Acta Crystallogr D Biol Crystallogr 68(Pt 4):352–367.
 
