@@ -31,17 +31,26 @@ $   cctbx.python <peints_directory>/peints_gui.py
     [chainID]/[residue No.]/[atomID]_[chainID]/[residue No.]/[atomID]
   
   For example:
+  
     A/110/CZ
     or
     A/110/CZ_A/39/CZ
+    
 5) Input a spacegroup name.
+
   Default:
+  
     Spacegroup_suggested_by_POINTLESS
+    
 6) Select a file name of processed dataset.
+
     aimless.mtz or XDS_ASCII.HKL
+    
 7) Choose options.
+
     If MR is ON, PEINTS do MR with MOLREP and refinement with REFMAC5.
     If MR is OFF, PEINTS only do refinement with REFMAC5.
+    
 8) Push RUN PEINTS.
 9) Browse peints_result.html using your web browser.
 
