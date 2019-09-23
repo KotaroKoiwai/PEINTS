@@ -87,9 +87,9 @@ References:
   
     Afonine P V, et al. (2012) Towards automated crystallographic structure refinement with phenix.refine. 
     Acta Crystallogr D Biol Crystallogr 68(Pt 4):352–367.
-
-
     
-    
-
+  XDS:
+  
+    Kabsch W (2010) Xds. 
+    Acta Crystallogr Sect D Biol Crystallogr 66(2):125–132.
   
