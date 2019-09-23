@@ -56,7 +56,7 @@ class main_window(tk.Frame):
         
         self.spacegroup = tk.Entry(frame,text="Space group", width=37, justify="center")
         self.spacegroup.pack()
-        self.spacegroup.insert(0, "Spacegroup_suggested_by_PReMo")
+        self.spacegroup.insert(0, "Spacegroup_suggested_by_POINTLESS")
         self.label_spacegroup = tk.Label(master, text="Space group  :  As suggested by PReMo.")
         self.label_spacegroup.pack(anchor="w", padx=20)
 
@@ -99,7 +99,7 @@ class main_window(tk.Frame):
         #self.EditBox.pack(anchor="w", padx=10)
 
 
-        self.peints = tk.Button(frame, text="RUN peints", command=self.run_peints)
+        self.peints = tk.Button(frame, text="RUN PEINTS", command=self.run_peints)
         self.peints.pack(fill="both", side="left")
         self.quit = tk.Button(frame, text="QUIT", fg="red", command=quit)
         self.quit.pack(fill="both", side="right")
