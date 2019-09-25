@@ -1,5 +1,6 @@
 # PEINTS
 A batch molecular replacement program for protein crystallography
+ビームタイムに収集したデータを一括分子置換、ターゲットサイトの電子密度図も取得します。
 
 PEINTS performs molecular replacement by MOLREP and REFMAC5 in the CCP4 program suite, 
 and captures images your target site by COOT.
