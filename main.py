@@ -52,9 +52,10 @@ class Run():
         if self.template != self.template_name:
             shutil.copy(self.template, self.template_name)
 
-        self.sequence_name = os.path.basename(self.sequence)
-        if self.sequence != self.sequence_name:
-            shutil.copy(self.sequence, self.sequence_name)
+        if os.path.isfile(self.sequence):
+            self.sequence_name = os.path.basename(self.sequence)
+            if self.sequence != self.sequence_name:
+                shutil.copy(self.sequence, self.sequence_name)
 
         reprocess_flag = self.re_process(self.spacegroup, xds_dir)
 
