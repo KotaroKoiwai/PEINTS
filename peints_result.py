@@ -32,9 +32,6 @@ def result(logger, beamtime_dir, template, sequence, flag_pr):
     ""<th>pocket_2</th>""\
     ""</tr>"
 
-    f = open("peints_result.html", "w")
-    f.write(html_body)
-    f.close()
 
     #=========================================
     # create inclusion of tabels
@@ -47,6 +44,7 @@ def result(logger, beamtime_dir, template, sequence, flag_pr):
         method = "phenix_001"
     pdb = method+".pdb"
 
+    logger.debug("Method  :  "+method)
 
     n = 0
     peints_dirs = []
@@ -84,35 +82,19 @@ def result(logger, beamtime_dir, template, sequence, flag_pr):
         targetsitepng2 = os.path.join(dir,method+"_targetsite_2.png")
 
         if lines != []:
-            if flag_pr == "False":
-                for line in lines:
-                    if line.startswith("REMARK   3   RESOLUTION RANGE HIGH (ANGSTROMS) :"):
-                        reso_high = line.split()[-1]
-                    if line.startswith("REMARK   3   RESOLUTION RANGE LOW  (ANGSTROMS) :"):
-                        reso_low = line.split()[-1]
-                    if line.startswith("REMARK   3   R VALUE            (WORKING SET) :"):
-                        rwork = line.split()[-1]
-                    if line.startswith("REMARK   3   FREE R VALUE                     :"):
-                        rfree = line.split()[-1]
-                    if line.startswith("CRYST1"):
-                        cell = '  '.join(line.split()[1:7])
-                        spacegroup = ''.join(line.split()[7:])
-                        break
-
-            if flag_pr == "True":
-                for line in lines:
-                    if line.startswith("REMARK   3   RESOLUTION RANGE HIGH (ANGSTROMS) :"):
-                        reso_high = line.split()[-1]
-                    if line.startswith("REMARK   3   RESOLUTION RANGE LOW  (ANGSTROMS) :"):
-                        reso_low = line.split()[-1]
-                    if line.startswith("REMARK   3   R VALUE            (WORKING SET) :"):
-                        rwork = line.split()[-1]
-                    if line.startswith("REMARK   3   FREE R VALUE                     :"):
-                        rfree = line.split()[-1]
-                    if line.startswith("CRYST1"):
-                        cell = '  '.join(line.split()[1:7])
-                        spacegroup = ''.join(line.split()[7:])
-                        break
+            for line in lines:
+                if line.startswith("REMARK   3   RESOLUTION RANGE HIGH (ANGSTROMS) :"):
+                    reso_high = line.split()[-1]
+                if line.startswith("REMARK   3   RESOLUTION RANGE LOW  (ANGSTROMS) :"):
+                    reso_low = line.split()[-1]
+                if line.startswith("REMARK   3   R VALUE            (WORKING SET) :"):
+                    rwork = line.split()[-1]
+                if line.startswith("REMARK   3   FREE R VALUE                     :"):
+                    rfree = line.split()[-1]
+                if line.startswith("CRYST1"):
+                    cell = '  '.join(line.split()[1:7])
+                    spacegroup = ''.join(line.split()[7:])
+                    break
 
         logger.debug(dir + "   :  " + \
                      "  Cell = "+str(cell) +"\n"+ \
@@ -121,7 +103,7 @@ def result(logger, beamtime_dir, template, sequence, flag_pr):
                      "  Rwork = "+str(rwork) +"\n"+ \
                      "  Rfree = "+str(rfree))
 
-        body = \
+        html_body += \
     "<tr>""\
     ""<td>"+unipuck_id+"</td>""\
     ""<td>"+crystal_id+"</td>""\
@@ -136,15 +118,12 @@ def result(logger, beamtime_dir, template, sequence, flag_pr):
     ""<td><a href="+targetsitepng1+" target='_blank'><img src="+targetsitepng1+" width='200'></a></td>""\
     ""<td><a href="+targetsitepng2+" target='_blank'><img src="+targetsitepng2+" width='200'></a></td>""\
     ""</tr>"
-        result = open("peints_result.html", "a")
-        result.write(body)
-        result.close()
-
         n += 1
 
-    endhtml = "</table></html>"
-    result = open("peints_result.html", "a")
-    result.write(endhtml)
+
+    html_body += "</table></html>"
+    result = open("peints_result.html", "w")
+    result.write(html_body)
     result.close()
 
     logger.debug("peints_result.html updated")
