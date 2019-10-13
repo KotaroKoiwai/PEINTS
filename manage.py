@@ -2,10 +2,8 @@
 
 import glob
 import os
-import shutil
 import datetime
 from logging import getLogger, FileHandler, StreamHandler, DEBUG
-import subprocess
 from multiprocessing import cpu_count
 from Bio import PDB
 parser = PDB.PDBParser()
@@ -163,6 +161,9 @@ class Manage():
 
 
     def targetsite_analysis(self, targetsite):
+        if " " in targetsite:
+            self.targetsite = targetsite.replace(" ", "")
+
         if not "_" in targetsite:
             self.logger.debug("targetsite    :   single")
             chain_1 = targetsite.split("/")[0]
@@ -239,7 +240,7 @@ if __name__  == '__main__':
     progdir = os.path.dirname(os.path.abspath(args[0]))
     workdir = os.getcwd()
 
-    Run(progdir, workdir, template, sequence, beamtime_dir, targetsite, spacegroup, data_name,
+    Manage(progdir, workdir, template, sequence, beamtime_dir, targetsite, spacegroup, data_name,
                  flag_molrep, flag_coot, flag_pr, flag_water, flag_sa)
 
 
