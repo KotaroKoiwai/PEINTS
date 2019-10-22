@@ -11,7 +11,7 @@ and captures images your target site by COOT.
 Dependency:
 1) Python2.7 or Python3 is installed.
 2) The CCP4 program suit is installed.
-3) Optionally, the PHNENIX package is installed.
+3) Optionally, the PHENIX package is installed.
 
 Usage:
 1) Execute GUI via following command:
