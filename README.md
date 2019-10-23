@@ -5,7 +5,7 @@ A batch molecular replacement program for protein crystallography
 ターゲットサイトの電子密度図画像も取得し、HTMLで一覧表示。
 
 PEINTS performs molecular replacement by MOLREP and REFMAC5 in the CCP4 program suite, 
-and captures images your target site by COOT.
+and captures images at your target site by COOT.
 
 
 Dependency:
@@ -21,7 +21,7 @@ $   cctbx.python <peints_directory>/peints_gui.py
 2) Push "Template" button and select your template pdb file (.pdb)
 3) Push "Sequence" button and select your sequence file (.txt or .seq)
 3) Push "Beamtime directory" button and select your beamtime directory*.
-  * The beamtime directory usually includes puck directories which includes datasets processed by XDS for each crystals.
+  * The beamtime directory usually includes puck directories which include datasets processed by XDS for each crystals.
 4) Push "Target site" button and input atom(s) of your target site.
   If you input single atom ID, peints will get images focusing the atom.
   If you input a pair of atom IDs, peints will place pseudoatom between the atoms, 
