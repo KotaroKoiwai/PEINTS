@@ -27,6 +27,10 @@ class main_window(tk.Frame):
         self.sequence = ""
         self.targetsite = ""
 
+        self.flag_temp_push = 0
+        self.flag_seq_push = 0
+        self.flag_prgdir_push = 0
+
         tk.Frame.__init__(self, master)
         self.label_top = tk.Label(master,text="MR for ligand screening")
         self.label_top.pack()
@@ -138,15 +142,37 @@ class main_window(tk.Frame):
         buttons = []
         def cmd_coot():
             if self.flag_coot.get():
-                print "image captured by coot"
+                print "PEINTS will capture images with coot"
             else:
-                print "Don't image captured by coot"
+                print "PEINTS will NOT capture images with coot"
     
         image_capture = Checkbutton(root, text = "image capture by coot", variable = self.flag_coot, command = cmd_coot)
         f_coot = LabelFrame(root, labelwidget = image_capture)
         image_capture.pack(side="left")
         buttons.append(image_capture)
         f_coot.pack(side="left")
+
+
+        #=================================================
+        # checkbox for overwrite
+        #=================================================
+        self.flag_overwrite = BooleanVar()
+        self.flag_overwrite.set(True)
+        v = IntVar()
+        v.set(0)
+        buttons = []
+        def cmd_overwrite():
+            if self.flag_overwrite.get():
+                print "PEINTS overwrites output files"
+            else:
+                print "PEINTS does NOT overwrite output files"
+
+        overwrite = Checkbutton(root, text = "overwrite", variable = self.flag_overwrite, command = cmd_overwrite)
+        f_coot = LabelFrame(root, labelwidget = overwrite)
+        overwrite.pack(side="left")
+        buttons.append(overwrite)
+        f_coot.pack(side="left")
+
 
 
         #=================================================
@@ -211,6 +237,7 @@ class main_window(tk.Frame):
         #=================================================
         
     def askstr_tmpl(self):
+        self.flag_temp_push = 1
         self.template = askopenfilename(filetypes = [('Image Files', ('.pdb', '.cif')),
                                             ('PDB Files', '.pdb'),
                                             ('CIF Files', '.cif')],
@@ -221,18 +248,19 @@ class main_window(tk.Frame):
         self.label_temp.config(text="Template  :  " + str(str1))
 
     def askstr_seq(self):
+        self.flag_seq_push = 1
         self.sequence = askopenfilename(filetypes = [('Seq Files', ('.seq', '.pir', '.txt')),
                                             ('Seq Files', '.seq'),
                                             ('Pir Files', '.pir'),
                                             ('Txt Files', '.txt')],
                                initialdir = self.path_name)
         self.set2(os.path.basename(self.sequence))
-        return self.sequence
     
     def set2(self, str2):
         self.label_seq.config(text="Sequence  :  " + str(str2))
 
     def askstr_prjct(self):
+        self.flag_prgdir_push = 1
         self.project_dir = askdirectory(initialdir = self.path_name)
         self.set3(self.project_dir)
 
@@ -260,23 +288,32 @@ class main_window(tk.Frame):
 
 
     def run_peints(self):
-        print("Run peints!")
-        import manage
-        manage.Manage(self.progdir,
-                 self.workdir,
-                 self.template, 
-                 self.sequence, 
-                 self.project_dir, 
-                 self.targetsite,
-                 self.spacegroup.get(),
-                 self.data_name,
-                 str(self.flag_molrep.get()),
-                 str(self.flag_coot.get()),
-                 str(self.flag_pr.get()),
-                 str(self.flag_water.get()),
-                 str(self.flag_sa.get())
-                 )
-        os.chdir(self.workdir)
+        if self.flag_temp_push == 1 and self.flag_prgdir_push == 1:
+            if self.flag_seq_push == 0:
+                self.sequence = ""
+
+            print("Run peints!")
+            import manage
+            manage.Manage(self.progdir,
+                     self.workdir,
+                     self.template,
+                     self.sequence,
+                     self.project_dir,
+                     self.targetsite,
+                     self.spacegroup.get(),
+                     self.data_name,
+                     str(self.flag_molrep.get()),
+                     str(self.flag_coot.get()),
+                     str(self.flag_overwrite.get()),
+                     str(self.flag_pr.get()),
+                     str(self.flag_water.get()),
+                     str(self.flag_sa.get())
+                     )
+            os.chdir(self.workdir)
+        elif self.flag_temp_push == 0:
+            print("Select your template model.")
+        elif self.flag_prgdir_push == 0:
+            print("Select your beam time directory.")
 
 
     def view_result(self):

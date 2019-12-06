@@ -14,7 +14,7 @@ import peints_result
 
 class Manage():
     def __init__(self, progdir, workdir, template, sequence, beamtime_dir, targetsite, spacegroup, data_name,
-                 flag_molrep, flag_coot, flag_pr, flag_water, flag_sa):
+                 flag_molrep, flag_coot, flag_overwrite, flag_pr, flag_water, flag_sa):
 
         self.print_logo()
 
@@ -28,6 +28,7 @@ class Manage():
         self.data_name = data_name
         self.flag_molrep = flag_molrep
         self.flag_coot = flag_coot
+        self.flag_overwrite = flag_overwrite
         self.flag_pr = flag_pr
         self.flag_water = flag_water
         self.flag_sa = flag_sa
@@ -152,8 +153,12 @@ class Manage():
         self.xds_dirs = []
         for file in aimless_files:
             xds_dir = os.path.dirname(file)
-            if not xds_dir.split("/")[-1][0:8]=="peints_":
-                self.xds_dirs.append(xds_dir)
+            if not xds_dir.split("/")[-1][0:7]=="peints_":
+                if self.flag_overwrite == "False":
+                    if not os.path.exists(os.path.dirname(xds_dir)+"/peints_"+os.path.basename(xds_dir)):
+                        self.xds_dirs.append(xds_dir)
+                else:
+                    self.xds_dirs.append(xds_dir)
         self.logger.debug("xds_? dir  :  "+ str(self.xds_dirs))
         import mypool
         p = mypool.MyPool(self.cpu_num)
