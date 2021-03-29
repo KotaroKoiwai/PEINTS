@@ -11,16 +11,18 @@ parser = PDB.PDBParser()
 import peints_result
 
 class Run():
-    def __init__(self, logger, progdir, xds_dir, data_name, new_coot_lines, targetsite, targetsite_for_coot,
-                 template, sequence, beamtime_dir, spacegroup,
-                 flag_molrep, flag_coot, flag_pr, flag_sa, flag_water, cpu_num, xds_dirs):
+    def __init__(self, logger, version, progdir, xds_dir, data_name, new_coot_lines, targetsite, targetsite_for_coot,
+                 template, sequence, beamtime_dir, spacegroup, cutoff_ios,
+                 flag_molrep, flag_coot, flag_pr, flag_sa, flag_water, cpu_num, xds_dirs, run_date):
 
         self.logger = logger
+        self.version = version
         self.progdir = progdir
         self.template = template
         self.sequence = sequence
         self.beamtime_dir = beamtime_dir
         self.spacegroup = spacegroup
+        self.cutoff_ios = cutoff_ios
         self.data_name = data_name
         self.new_coot_lines = new_coot_lines
         self.targetsite = targetsite
@@ -32,12 +34,13 @@ class Run():
         self.flag_sa = flag_sa
         self.cpu_num = cpu_num
         self.xds_dirs = xds_dirs
+        self.run_date = run_date
 
         self.run(xds_dir)
 
     def run(self, xds_dir):
-        self.logger.debug("peints "+xds_dir+" started on "+str(datetime.datetime.now()))
-        os.chdir(xds_dir)
+        self.logger.debug("\n"
+                          "peints "+xds_dir+" started on "+str(datetime.datetime.now())+"\n")
         peints_dir = "../peints_"+os.path.basename(xds_dir)
         try:
             os.makedirs(peints_dir)
@@ -67,7 +70,8 @@ class Run():
         cmd = "bash "+ self.progdir+ "/peints.sh " + \
                        xds_dir + " "+ \
                        self.template_name + " " + \
-                       str(self.flag_molrep)
+                       str(self.flag_molrep) + " " + \
+                       self.sg_aimless
         self.logger.debug("command for peints.sh  :  "+cmd)
         self.logger.debug("peints.sh "+xds_dir+" started on "+str(datetime.datetime.now()))
         p_mr = subprocess.Popen(cmd, shell=True)
@@ -110,7 +114,12 @@ class Run():
             pass
 
         os.chdir(self.beamtime_dir)
-        peints_result.result(self.logger, self.progdir, self.template, self.sequence, self.flag_pr)
+        peints_result.result(self.logger, self.progdir,
+                             self.run_date, self.version,
+                             self.beamtime_dir, self.template,
+                             self.sequence, self.targetsite,
+                             self.spacegroup,
+                             self.cutoff_ios, self.flag_pr)
 
     def re_process(self, spacegroup, xds_dir):
         reprocess_flag = False
@@ -124,7 +133,7 @@ class Run():
 
         else:
             if spacegroup == "Spacegroup_suggested_by_POINTLESS":
-                self.logger.debug(xds_dir+"   :   Don't re_processing by POINTLESS")
+                self.logger.debug(xds_dir+"   :   PEINTS doesn't re_process by POINTLESS")
             elif spacegroup != "Spacegroup_suggested_by_POINTLESS":
                 files = os.listdir(os.path.join("../", os.path.basename(xds_dir)))
                 self.logger.debug(files)
@@ -168,6 +177,7 @@ class Run():
 
         cmd = "aimless hklin pointless.mtz hklout aimless.mtz <<eof | tee aimless.log.1\n" \
                         "onlymerge\n" \
+                        "analysis isigminimum "+str(self.cutoff_ios)+"\n" \
                         "spacegroup "+spacegroup+"\n" \
                         "END\n" \
                         "eof\n"
@@ -179,9 +189,13 @@ class Run():
         f = open("aimless.log.1", "r")
         lines = f.readlines()
         f.close()
+        value = 0
         for line in lines:
-            if line.startswith("   from Mn(I/sd) >  2.00:                         limit ="):
-                maxreso = str(line.split()[6])[:-1]
+            if line.startswith("Estimates of resolution limits: overall"):
+                value = 1
+            if value == 1 and line.startswith("   from Mn(I/sd) >  "+str('{:.02f}'.format(float(self.cutoff_ios)))):
+                maxreso = str(line.split()[-1])[:-1]
+                value = 2
 
         cmd = "aimless hklin pointless.mtz hklout aimless.mtz <<eof | tee aimless.log\n" \
               "onlymerge\n" \
@@ -192,6 +206,20 @@ class Run():
         self.logger.debug("command for aimless  :  "+cmd)
         p_pa = subprocess.Popen(cmd, shell=True)
         p_pa.wait()
+
+        if spacegroup == "none":
+            f = open("aimless.log", "r")
+            lines = f.readlines()
+            f.close()
+            for line in lines:
+                if line.startswith("Space group"):
+                    sg_line_aimless = line.split()[2:]
+            self.sg_aimless = ""
+            for sg_compo in sg_line_aimless:
+                self.sg_aimless += sg_compo
+
+        elif spacegroup != "Spacegroup_suggested_by_POINTLESS":
+            self.sg_aimless = spacegroup
 
         reprocess_flag = True
         return reprocess_flag

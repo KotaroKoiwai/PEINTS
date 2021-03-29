@@ -5,21 +5,20 @@
 XDSDIR=${1}
 TEMPpdb=${2}
 MR_FLAG=${3}
+sg=${4}
 
 ctruncate -mtzin ${XDSDIR}/aimless.mtz -mtzout ctruncate.mtz -colin '/*/*/[IMEAN,SIGIMEAN]' -colano '/*/*/[I(+),SIGI(+),I(-),SIGI(-)]' <<eof | tee ctruncate.log
 
 eof
 
-reso_temp=(`grep "High resolution limit" ${XDSDIR}/aimless.log`)
-sg_temp=(`grep "^Space group" ${XDSDIR}/aimless.log`)
-uc_temp=(`grep "^Average unit cell" ${XDSDIR}/aimless.log`)
+reso_temp=(`grep "Resolution range of data:" ctruncate.log`)
+uc_temp=(`grep "^Cell parameters:" ctruncate.log`)
 
 echo ${reso_temp[@]}
 echo ${sg_temp[@]}
 echo ${uc_temp[@]}
-uc="${uc_temp[3]} ${uc_temp[4]} ${uc_temp[5]} ${uc_temp[6]} ${uc_temp[7]} ${uc_temp[8]}"
-sg="${sg_temp[2]}${sg_temp[3]}${sg_temp[4]}${sg_temp[5]}"
-reso=${reso_temp[3]}
+uc="${uc_temp[2]} ${uc_temp[3]} ${uc_temp[4]} ${uc_temp[5]} ${uc_temp[6]} ${uc_temp[7]}"
+reso=${reso_temp[6]}
 
 
 echo "$uc"
