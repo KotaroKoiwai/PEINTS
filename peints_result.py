@@ -77,7 +77,11 @@ def result(logger, progdir, run_date, version, beamtime_dir, template, sequence,
         cell = ""
         reso_high = ""
         reso_low = ""
+        data_process = ""
+        data_process_color = ""
         rwork = ""
+        rwork_color = ""
+        rfree_color = ""
         rfree = ""
         data = dir.split("peints_")[1]
         lines = []
