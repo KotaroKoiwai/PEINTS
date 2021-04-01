@@ -14,7 +14,8 @@ import peints_result
 
 class Manage():
     def __init__(self, progdir, workdir, template, sequence, beamtime_dir, targetsite, spacegroup, data_name, cutoff_ios,
-                 flag_molrep, flag_coot, flag_overwrite, flag_pr, flag_water, flag_sa):
+                 flag_molrep, flag_coot, flag_skip_processed_data, flag_overwrite,
+                 flag_pr, flag_water, flag_sa):
 
         self.print_logo()
 
@@ -29,6 +30,7 @@ class Manage():
         self.cutoff_ios = cutoff_ios
         self.flag_molrep = flag_molrep
         self.flag_coot = flag_coot
+        self.flag_skip_processed_data = flag_skip_processed_data
         self.flag_overwrite = flag_overwrite
         self.flag_pr = flag_pr
         self.flag_water = flag_water
@@ -58,6 +60,8 @@ class Manage():
                      "data name     :  "+self.data_name + "\n"
                      "cut-off I/sigma(I)        :  "+str(self.cutoff_ios) +"\n"
                      "molrep        :  "+str(self.flag_molrep) +"\n"
+                     "skip_processed_data       :  "+str(self.flag_skip_processed_data) +"\n"                                           
+                     "overwrite     :  "+str(self.flag_overwrite) +"\n"                                           
                      "image_capture_by_coot     :  "+str(self.flag_pr) +"\n"               
                      "phenix.refine             :  "+str(self.flag_water) +"\n"                  
                      "simulated_annealing       :  "+str(self.flag_sa) +"\n")
@@ -186,16 +190,15 @@ class Manage():
                 xds_dir = os.path.dirname(file)
                 xds_dir_model["xds_dir"] = xds_dir
                 xds_dir_model["model"] = self.template
-                if not xds_dir.split("/")[-1][0:7]=="peints_":
-                    if self.flag_overwrite == "False":
-                        if not os.path.exists(os.path.dirname(xds_dir)+"/peints_"+os.path.basename(xds_dir)):
-                            self.xds_dir_model_list.append(xds_dir_model)
-                        else:
-                            pass
+
+                if self.flag_skip_processed_data == str(False):
+                    self.xds_dir_model_list.append(xds_dir_model)
+                elif self.flag_skip_processed_data == str(True):
+                    peints_dirs = glob.glob(os.path.dirname(xds_dir)+"/peints_*")
+                    if len(peints_dirs)>0:
+                        pass
                     else:
                         self.xds_dir_model_list.append(xds_dir_model)
-                else:
-                    pass
 
         else:
             for raw in self.csv_dict_list:
@@ -279,6 +282,7 @@ class Manage():
                  self.cutoff_ios,
                  self.flag_molrep,
                  self.flag_coot,
+                 self.flag_overwrite,
                  self.flag_pr,
                  self.flag_sa,
                  self.flag_water,

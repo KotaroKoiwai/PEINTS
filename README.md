@@ -58,13 +58,6 @@ $   cctbx.python <peints_directory>/peints_gui.py
 9) Browse peints_result.html using your web browser.
 
 
-Citation:
-
-  PEINTS:
-
-    Koiwai K, et al. (2021)  Non-steroidal inhibitors of Drosophila melanogaster steroidogenic glutathione S-transferase Noppera-bo.
-    J Pestic Sci. 2021 Feb 20;46(1):75-87.
-
 
 References:
 

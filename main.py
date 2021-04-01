@@ -13,7 +13,8 @@ import peints_result
 class Run():
     def __init__(self, logger, version, progdir, xds_dir, data_name, new_coot_lines, targetsite, targetsite_for_coot,
                  template, sequence, beamtime_dir, spacegroup, cutoff_ios,
-                 flag_molrep, flag_coot, flag_pr, flag_sa, flag_water, cpu_num, xds_dirs, run_date):
+                 flag_molrep, flag_coot,
+                 flag_overwrite, flag_pr, flag_sa, flag_water, cpu_num, xds_dirs, run_date):
 
         self.logger = logger
         self.version = version
@@ -29,6 +30,7 @@ class Run():
         self.targetsite_for_coot = targetsite_for_coot
         self.flag_molrep = flag_molrep
         self.flag_coot = flag_coot
+        self.flag_overwrite = flag_overwrite
         self.flag_pr = flag_pr
         self.flag_water = flag_water
         self.flag_sa = flag_sa
@@ -36,16 +38,30 @@ class Run():
         self.xds_dirs = xds_dirs
         self.run_date = run_date
 
+        self.prep(xds_dir)
         self.run(xds_dir)
 
-    def run(self, xds_dir):
+    def prep(self, xds_dir):
         self.logger.debug("\n"
                           "peints "+xds_dir+" started on "+str(datetime.datetime.now())+"\n")
-        peints_dir = "../peints_"+os.path.basename(xds_dir)
+
+        peints_dirs = glob.glob("../peints_*_"+os.path.basename(xds_dir))
+        run_num = len(peints_dirs)+1
+        if self.flag_overwrite == "False":
+            pass
+        elif self.flag_overwrite == "True":
+            if run_num == 1:
+                run_num = 1
+            else:
+                run_num -= 1
+        peints_dir = "../peints_"+str(run_num)+"_"+os.path.basename(xds_dir)
+
         try:
             os.makedirs(peints_dir)
         except:
             pass
+
+
         os.chdir(peints_dir)
         f = open("peints_coot.py", "w")
         f.write(self.new_coot_lines)
@@ -59,6 +75,8 @@ class Run():
             self.sequence_name = os.path.basename(self.sequence)
             if self.sequence != self.sequence_name:
                 shutil.copy(self.sequence, self.sequence_name)
+
+    def run(self, xds_dir):
 
         reprocess_flag = self.re_process(self.spacegroup, xds_dir)
 
@@ -239,8 +257,8 @@ class Run():
 
         structure = parser.get_structure("X", output_pdb)
         model = structure[0]
-        chain1   = model[chain_1]
-        chain2   = model[str(chain_2)]
+        chain1 = model[chain_1]
+        chain2 = model[str(chain_2)]
         residue1 = chain1[int(resi_1)]
         residue2 = chain2[int(resi_2)]
         coord_atom_1 = residue1[str(atom_1)].get_coord()
@@ -250,7 +268,7 @@ class Run():
         self.logger.debug("Coordinate targetsite_2  :  " + str(coord_atom_2))
 
         middle = (coord_atom_1 + coord_atom_2)/2
-        self.logger.debug("Coodinate middle_point  :  "+str(middle))
+        self.logger.debug("Coordinate middle_point  :  "+str(middle))
 
         model = structure.get_list()
         chains = model[0].get_list()

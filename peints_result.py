@@ -81,8 +81,8 @@ def result(logger, progdir, run_date, version, beamtime_dir, template, sequence,
         data_process_color = ""
         rwork = ""
         rwork_color = ""
-        rfree_color = ""
         rfree = ""
+        rfree_color = ""
         data = dir.split("peints_")[1]
         lines = []
 
@@ -116,11 +116,11 @@ def result(logger, progdir, run_date, version, beamtime_dir, template, sequence,
                 if line.startswith("REMARK   3   RESOLUTION RANGE LOW  (ANGSTROMS) :"):
                     reso_low = line.split()[-1]
                 if line.startswith("REMARK   3   R VALUE            (WORKING SET) :"):
-                    rwork = str(line.split()[-1])[:3]
+                    rwork = str(round(float(line.split()[-1]),3))
                     if float(rwork) < 0.35:
                         rwork_color = "lightgreen"
                 if line.startswith("REMARK   3   FREE R VALUE                     :"):
-                    rfree = str(line.split()[-1])[:3]
+                    rfree = str(round(float(line.split()[-1]),3))
                     if float(rfree) < 0.35:
                         rfree_color = "lightgreen"
                 if line.startswith("CRYST1"):

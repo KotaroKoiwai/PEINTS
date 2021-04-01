@@ -29,14 +29,15 @@ class main_window(tk.Frame):
         self.targetsite = ""
         self.cutoff_ios = "2.0"
         self.flag_molrep = True
-        self.flag_coot= True
-        self.flag_overwrite = True
+        self.flag_coot = True
+        self.flag_skip_processed_data = True
+        self.flag_overwrite = False
         self.flag_pr= False
         self.flag_water= False
         self.flag_sa= False
         self.flag_temp_push = 0
         self.flag_seq_push = 0
-        self.flag_prgdir_push = 0
+        self.flag_BTdir_push = 0
 
         self.read_prerun()
 
@@ -75,10 +76,72 @@ class main_window(tk.Frame):
         self.label_cutoff_ios = tk.Label(master, text="Cut-off I/sigma(I)  :  2.0")
         self.label_cutoff_ios.pack(anchor="w", padx=20)
 
+        self.run_mode = {"overwrite": self.flag_overwrite, "skip": self.flag_skip_processed_data}
+        run_mode_frame = LabelFrame(frame, text="Run mode")
+        self.run_mode_var = IntVar()
+        self.run_mode_var.set(0)
+        def change_state_run_mode():
+            checked = self.run_mode_var.get()
+            if checked == 0:
+                self.run_mode_process_all_rbtn.configure(state="active")
+                self.flag_skip_processed_data = False
+            elif checked == 1:
+                self.run_mode_skip_processed_rbtn.configure(state="active")
+                self.flag_skip_processed_data = True
+            self.run_mode["skip"] = self.flag_skip_processed_data
+        self.run_mode_process_all_rbtn = tk.Radiobutton(run_mode_frame,
+                                          text="Process all data",
+                                          variable=self.run_mode_var,
+                                          value=0,
+                                          width=16,
+                                          height=2,
+                                          justify="left",
+                                          command=change_state_run_mode)
+        self.run_mode_skip_processed_rbtn = tk.Radiobutton(run_mode_frame,
+                                          text="Skip processed data",
+                                          variable=self.run_mode_var,
+                                          value=1,
+                                          width=16,
+                                          height=2,
+                                          justify="left",
+                                          command=change_state_run_mode)
+
+        self.run_mode_process_all_rbtn.grid(row=0, column=0, padx=10)
+        self.run_mode_skip_processed_rbtn.grid(row=0, column=1, padx=10)
+        run_mode_frame.pack()
+
+        self.flag_overwrite_blv = BooleanVar()
+        self.flag_overwrite_blv.set(False)
+        v = IntVar()
+        v.set(0)
+        buttons = []
+        def cmd_overwrite():
+            self.flag_overwrite = self.flag_overwrite_blv.get()
+            if self.flag_overwrite:
+                print("PEINTS overwrites output files")
+            else:
+                print("PEINTS does NOT overwrite output files")
+            self.run_mode["flag_overwrite"] = self.flag_overwrite
+
+        overwrite_cbtn = Checkbutton(run_mode_frame,
+                                     text="overwrite",
+                                     variable=self.flag_overwrite_blv,
+                                     command=cmd_overwrite)
+        overwrite_cbtn.grid(row=1, column=0, columnspan=2)
+        run_mode_frame.pack()
+
         self.data_name = "XDS_ASCII.HKL"
-        data_name_frame = LabelFrame(frame, text="Data name")
+        data_name_frame = LabelFrame(frame, text="Data name", width=36)
         self.data_name_var = IntVar()
         self.data_name_var.set(1)
+        def change_state_data():
+            checked = self.data_name_var.get()
+            if checked == 0:
+                self.data_name_2.configure(state="active")
+                self.data_name = "aimless.mtz"
+            elif checked == 1:
+                self.data_name_1.configure(state="active")
+                self.data_name = "XDS_ASCII.HKL"
         self.data_name_1 = tk.Radiobutton(data_name_frame,
                                           text="aimless.mtz",
                                           variable=self.data_name_var,
@@ -86,7 +149,7 @@ class main_window(tk.Frame):
                                           width=16,
                                           height=2,
                                           justify="left",
-                                          command=self.change_state)
+                                          command=change_state_data)
         self.data_name_2 = tk.Radiobutton(data_name_frame,
                                           text="XDS_ASCII.HKL",
                                           variable=self.data_name_var,
@@ -94,7 +157,7 @@ class main_window(tk.Frame):
                                           width=16,
                                           height=2,
                                           justify="left",
-                                          command=self.change_state)
+                                          command=change_state_data)
         self.data_name_1.pack(side = "left", padx=10)
         self.data_name_2.pack(side = "right", padx=10)
         data_name_frame.pack()
@@ -164,31 +227,6 @@ class main_window(tk.Frame):
         buttons.append(image_capture_cbtn)
         option_frame.pack(side="left")
 
-
-        #=================================================
-        # checkbox for overwrite
-        #=================================================
-        self.flag_overwrite_blv = BooleanVar()
-        self.flag_overwrite_blv.set(True)
-        v = IntVar()
-        v.set(0)
-        buttons = []
-        def cmd_overwrite():
-            self.flag_overwrite = self.flag_overwrite_blv.get()
-            if self.flag_overwrite:
-                print("PEINTS overwrites output files")
-            else:
-                print("PEINTS does NOT overwrite output files")
-
-        overwrite_cbtn = Checkbutton(root,
-                                     text="overwrite",
-                                     variable=self.flag_overwrite_blv,
-                                     command=cmd_overwrite)
-        option_frame = LabelFrame(root,
-                                  labelwidget=overwrite_cbtn)
-        overwrite_cbtn.pack(side="left")
-        buttons.append(overwrite_cbtn)
-        option_frame.pack(side="left")
 
 
 
@@ -289,7 +327,7 @@ class main_window(tk.Frame):
         self.label_seq.config(text="Sequence  :  " + str(seq))
 
     def askstr_bt_dir(self):
-        self.flag_prgdir_push = 1
+        self.flag_BTdir_push = 1
         self.BT_dir = askdirectory(initialdir=self.BT_dir)
         self.set_bt_dir_label(self.BT_dir)
 
@@ -314,18 +352,9 @@ class main_window(tk.Frame):
     def set_cutoff_label(self, cutoff_ios):
         self.label_cutoff_ios.config(text="Cut-off I/sigma(I)  :  " + str(cutoff_ios))
 
-    def change_state(self):
-        checked = self.data_name_var.get()
-        if checked == 0:
-            self.data_name_2.configure(state="active")
-            self.data_name = "aimless.mtz"
-        elif checked == 1:
-            self.data_name_1.configure(state="active")
-            self.data_name = "XDS_ASCII.HKL"
-
 
     def run_peints(self):
-        if self.flag_temp_push == 1 and self.flag_prgdir_push == 1:
+        if self.flag_temp_push == 1 and self.flag_BTdir_push == 1:
             if self.flag_seq_push == 0:
                 self.sequence = ""
 
@@ -346,6 +375,7 @@ class main_window(tk.Frame):
                           self.cutoff_ios,
                           str(self.flag_molrep),
                           str(self.flag_coot),
+                          str(self.flag_skip_processed_data),
                           str(self.flag_overwrite),
                           str(self.flag_pr),
                           str(self.flag_water),
@@ -354,7 +384,7 @@ class main_window(tk.Frame):
             os.chdir(self.BT_dir)
         elif self.flag_temp_push == 0:
             print("Select your template model.")
-        elif self.flag_prgdir_push == 0:
+        elif self.flag_BTdir_push == 0:
             print("Select your beam time directory.")
 
     def read_prerun(self):
@@ -376,6 +406,7 @@ class main_window(tk.Frame):
             self.cutoff_ios = prerun_dict["cutoff_ios"]
             self.flag_molrep = prerun_dict["flag_molrep"]
             self.flag_coot = prerun_dict["flag_coot"]
+            self.flag_skip_processed_data = prerun_dict["flag_skip_processed_data"]
             self.flag_overwrite = prerun_dict["flag_overwrite"]
             self.flag_pr= prerun_dict["flag_pr"]
             self.flag_water= prerun_dict["flag_water"]
@@ -386,7 +417,9 @@ class main_window(tk.Frame):
 
     def update_prerun_csv(self):
         body = "template,beamtime_directory,sequence,targetsite,cutoff_ios," \
-               "flag_molrep,flag_coot,flag_overwrite,flag_pr,flag_water,flag_sa\n"
+               "flag_molrep,flag_coot," \
+               "flag_overwrite,flag_skip_processed_data," \
+               "flag_pr,flag_water,flag_sa\n"
         body += self.template+","
         body += self.BT_dir+","
         body += self.sequence + ","
@@ -394,6 +427,7 @@ class main_window(tk.Frame):
         body += self.cutoff_ios + ","
         body += str(self.flag_molrep) + ","
         body += str(self.flag_coot) + ","
+        body += str(self.flag_skip_processed_data) + ","
         body += str(self.flag_overwrite) + ","
         body += str(self.flag_pr) + ","
         body += str(self.flag_water) + ","
