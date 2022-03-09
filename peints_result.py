@@ -4,7 +4,9 @@ import cgitb
 cgitb.enable()
 
 
-def result(logger, progdir, run_date, version, beamtime_dir, template, sequence, targetsite, spacegroup, cutoff_ios, flag_pr):
+def result(logger, progdir, run_date, version,
+           beamtime_dir, template, sequence, targetsite, spacegroup, cutoff_ios,
+           flag_phaser, flag_pr):
     #=========================================
     # create HTML header & table_index
     #=========================================
@@ -73,6 +75,8 @@ def result(logger, progdir, run_date, version, beamtime_dir, template, sequence,
             peints_dirs.append(dir)
 
     for dir in peints_dirs:
+        check_result = ""
+        check_result_color = ""
         spacegroup = ""
         cell = ""
         reso_high = ""
@@ -84,24 +88,35 @@ def result(logger, progdir, run_date, version, beamtime_dir, template, sequence,
         rfree = ""
         rfree_color = ""
         data = dir.split("peints_")[1]
+
         lines = []
 
         files = os.listdir(dir)
+
+        if "sort_check_result.txt" in files:
+            f = open(os.path.join(dir, "sort_check_result.txt"), "r")
+            lines = f.readlines()
+            f.close()
+            check_result = lines[0]
+
+            if check_result == "FINE":
+                check_result_txt = ""
+            else:
+                check_result_txt = "<br>"+check_result
+                check_result_color = "lightpink"
+
+
+        if "refmac1.pdb" in files:
+            method = "refmac1"
+        elif "MTZ.mtz" in files:
+            method = "phenix_001"
+        pdb = method+".pdb"
         if pdb in files:
             data_process = "SUCCESS"
             data_process_color = "lightgreen"
             f = open(os.path.join(dir, pdb), "r")
             lines = f.readlines()
             f.close()
-        if not "molrep.pdb" in files:
-            data_process = "FAILED at MOLREP"
-        if not "peints.mtz" in files:
-            data_process = "FAILED between CTRUNCATE and MOLREP"
-        if not "ctruncate.mtz" in files:
-            data_process = "FAILED after AIMLESS"
-        if not "aimless.mtz" in files:
-            data_process = "FAILED at AIMLESS"
-
 
         unipuck_id = dir.split("/")[0]
         crystal_id = dir.split("/")[1]
@@ -128,6 +143,24 @@ def result(logger, progdir, run_date, version, beamtime_dir, template, sequence,
                     spacegroup = ''.join(line.split()[7:])
                     break
 
+
+        if method == "refmac1":
+            if not "molrep.pdb" in files:
+                data_process = "FAILED at MOLREP"
+            if not "peints.mtz" in files:
+                data_process = "FAILED between CTRUNCATE and MOLREP"
+            if not "ctruncate.mtz" in files:
+                data_process = "FAILED after AIMLESS"
+            if not "aimless.mtz" in files:
+                data_process = "FAILED at AIMLESS"
+
+        elif method == "phenix_001":
+            if not "PHASER.1.pdb" in files:
+                data_process = "FAILED at PHASER"
+            if not "MTZ.mtz" in files:
+                data_process = "FAILED at file conversion"
+
+
         logger.debug(dir + "   :  " + \
                      "  Cell = "+str(cell) +"\n"+ \
                      "  Spacegroup = "+str(spacegroup) +"\n"+ \
@@ -139,7 +172,7 @@ def result(logger, progdir, run_date, version, beamtime_dir, template, sequence,
     "<tr>" \
     "<td>"+unipuck_id+"</td>" \
     "<td>"+crystal_id+"</td>" \
-    "<td>"+data+"</td>" \
+    "<td bgcolor="+check_result_color+">"+data+check_result_txt+"</td>" \
     "<td>"+spacegroup+"</td>" \
     "<td>"+cell+"</td>" \
     "<td>"+reso_high+"</td>" \

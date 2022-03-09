@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import glob
 import os
-import datetime
+import glob, csv, datetime
 from logging import getLogger, FileHandler, StreamHandler, DEBUG
 from multiprocessing import cpu_count
 from Bio import PDB
@@ -13,34 +12,16 @@ import peints_result
 
 
 class Manage():
-    def __init__(self, progdir, workdir, template, sequence, beamtime_dir, targetsite, spacegroup, data_name, cutoff_ios,
-                 flag_molrep, flag_coot, flag_skip_processed_data, flag_overwrite,
-                 flag_pr, flag_water, flag_sa):
+    def __init__(self, input_file):
 
+        self.input_file = input_file
         self.print_logo()
-
-        self.progdir = progdir
-        self.workdir = workdir
-        self.template = template
-        self.sequence = sequence
-        self.beamtime_dir = beamtime_dir
-        self.targetsite = targetsite
-        self.spacegroup = spacegroup
-        self.data_name = data_name
-        self.cutoff_ios = cutoff_ios
-        self.flag_molrep = flag_molrep
-        self.flag_coot = flag_coot
-        self.flag_skip_processed_data = flag_skip_processed_data
-        self.flag_overwrite = flag_overwrite
-        self.flag_pr = flag_pr
-        self.flag_water = flag_water
-        self.flag_sa = flag_sa
+        self.read_input_file()
         self.run_date = str(datetime.datetime.now())
-
         self.cpu_num = cpu_count()-1
+        self.prep()
 
-
-        logfile = os.path.join(self.beamtime_dir, "peints_"+str(datetime.datetime.now())+".log")
+        logfile = os.path.join(self.workdir, "peints_"+str(datetime.datetime.now())+".log")
         self.logger = getLogger(__name__)
         handler = FileHandler(filename=logfile)
         handler2 = StreamHandler()
@@ -60,51 +41,61 @@ class Manage():
                      "data name     :  "+self.data_name + "\n"
                      "cut-off I/sigma(I)        :  "+str(self.cutoff_ios) +"\n"
                      "molrep        :  "+str(self.flag_molrep) +"\n"
-                     "skip_processed_data       :  "+str(self.flag_skip_processed_data) +"\n"                                           
-                     "overwrite     :  "+str(self.flag_overwrite) +"\n"                                           
-                     "image_capture_by_coot     :  "+str(self.flag_pr) +"\n"               
-                     "phenix.refine             :  "+str(self.flag_water) +"\n"                  
+                     "image_capture_by_coot     :  "+str(self.flag_coot) +"\n"   
+                     "PHENIX                    :  "+str(self.flag_phenix) + "\n"
+                     "phenix.refine             :  "+str(self.flag_pr) + "\n"
+                     "Phaser                    :  "+str(self.flag_phaser) + "\n"
+                     "input_water               :  "+str(self.flag_water) +"\n"
                      "simulated_annealing       :  "+str(self.flag_sa) +"\n")
 
-        self.prep()
         self.manage_project()
         self.run()
         self.logger.debug("peints finished on "+str(datetime.datetime.now()))
 
     def print_logo(self):
         print("""
-    
-    
+        
     +-----------------------------------------------------------------------------------+
     |                                                                                   |
     |                                                                                   |
-    |                                      peints                                      |
+    |                                      PEINTS                                       |
     |                                MR for ligand screening                            |
     |                                                                                   |
     |                             Kotaro Koiwai, Toshiya Senda                          |
     |                                                                                   |    
     |     * required parameters                                                         |    
-    |        -m/--model          :     Full path of a template model for MR             |  
-    |        -seq/--sequence     :     Full path of a sequence file                     |    
-    |        -bt/--beamtime_dir  :     Full path of a beamtime directory                |      
-    |        -t/--targetsite     :     Your target site:                                |
-    |                                  e.g. A/110/CZ,                                   |
-    |                                       or A/39/CZ_A/110/CZ                         | 
-    |        -data/--data_name   :     aimless.mtz or XDS_ASCII.HKL                     | 
-    |                                                                                   |
-    |     * Optional parameters                                                         |      
-    |        -sg/--spacegroup    :     Spacegroup name                                  |     
-    |        -skip_mr/--skip_mr  :     Do NOT MR, only refine                           |       
-    |        -no_png/--no_png    :     Do not capture images by coot                    |     
-    |        -pr/--phenix_refine :     Refinement with phenix.refine                    |
-    |                                  after REFMAC5                                    |     
-    |        -sa/--simulated_annealing :     phenix.refine with simulated annealing     |    
-    |        -water/--water      :     input water molecules in phenix.refine           |     
+    |        -i/--input_file          :     Full path of a PEINTS CSV file              |  
     |                                                                                   |
     |                                                                                   |
     +-----------------------------------------------------------------------------------+
     
         """)
+
+    def read_input_file(self):
+        csv_file = open(self.input_file, "r")
+        f = csv.DictReader(csv_file)
+        input_dict_list = [raw for raw in f]
+        input_dict = input_dict_list[0]
+        csv_file.close()
+        self.progdir = input_dict["progdir"]
+        self.template = input_dict["template"]
+        self.workdir = input_dict["beamtime_directory"]
+        self.sequence = input_dict["sequence"]
+        self.spacegroup = input_dict["spacegroup"]
+        self.targetsite = input_dict["targetsite"]
+        self.cutoff_ios = input_dict["cutoff_ios"]
+        self.data_name = input_dict["data_name"]
+        self.flag_molrep = input_dict["flag_molrep"]
+        self.flag_coot = input_dict["flag_coot"]
+        self.flag_overwrite = input_dict["flag_overwrite"]
+        self.flag_skip_processed_data = input_dict["flag_skip_processed_data"]
+        self.flag_phenix = input_dict["flag_phenix"]
+        self.flag_phaser = input_dict["flag_phaser"]
+        self.flag_pr= input_dict["flag_pr"]
+        self.flag_water= input_dict["flag_water"]
+        self.flag_sa = input_dict["flag_sa"]
+        self.beamtime_dir = self.workdir
+
 
     def prep(self):
         self.template = os.path.abspath(self.template)
@@ -146,9 +137,9 @@ class Manage():
         coot_scm_orig.close()
 
         method = "refmac1"
-        if self.flag_pr == "False":
+        if self.flag_phenix == "False":
             method = "refmac1"
-        elif self.flag_pr == "True":
+        elif self.flag_phenix == "True" or self.flag_pr == "True":
             method = "phenix_001"
 
         self.targetsite_for_coot = self.targetsite_analysis(self.targetsite)
@@ -178,27 +169,28 @@ class Manage():
             aimless_files = []
             for current, subfolders, subfiles in os.walk(self.beamtime_dir):
                 for subfile in subfiles:
-                    if subfile == self.data_name:
+                    if subfile[0:3] == self.data_name[0:3] and subfile[-3:] == self.data_name[-3:]:
                         aimless_files.append(os.path.join(os.path.abspath(current), subfile))
 
             for file in aimless_files:
-                self.logger.debug("""
-                Found data files
-                """)
+                self.logger.debug("Found data files")
                 self.logger.debug(file)
                 xds_dir_model = {}
                 xds_dir = os.path.dirname(file)
                 xds_dir_model["xds_dir"] = xds_dir
                 xds_dir_model["model"] = self.template
 
-                if self.flag_skip_processed_data == str(False):
+                print("flag_skip_processed_data  :  "+str(self.flag_skip_processed_data))
+
+                if str(self.flag_skip_processed_data) == "False":
                     self.xds_dir_model_list.append(xds_dir_model)
-                elif self.flag_skip_processed_data == str(True):
+                elif str(self.flag_skip_processed_data) == "True":
                     peints_dirs = glob.glob(os.path.dirname(xds_dir)+"/peints_*")
                     if len(peints_dirs)>0:
                         pass
                     else:
                         self.xds_dir_model_list.append(xds_dir_model)
+
 
         else:
             for raw in self.csv_dict_list:
@@ -225,18 +217,11 @@ class Manage():
                                         self.xds_dir_model_list.append(xds_dir_model)
                                     else:
                                         pass
-
                                 else:
                                     self.xds_dir_model_list.append(xds_dir_model)
                             else:
                                 pass
 
-
-        self.logger.debug("""
-        Data dir and model
-        """)
-        for dir in self.xds_dir_model_list:
-            self.logger.debug(str(self.xds_dir_model_list))
         import mypool
         p = mypool.MyPool(self.cpu_num)
         p.map(self.bash_peints, self.xds_dir_model_list)
@@ -249,14 +234,14 @@ class Manage():
                 self.targetsite = targetsite.replace(" ", "")
 
             if not "_" in targetsite:
-                self.logger.debug("targetsite    :   single")
+                self.logger.debug("targetsite    :   single\n")
                 chain_1 = targetsite.split("/")[0]
                 resi_1  = targetsite.split("/")[1]
                 atom_1  = targetsite.split("/")[2]
                 targetsite_for_coot = "'"+str(chain_1)+"',"+str(resi_1)+",'"+str(atom_1)+"'"
 
             else:
-                self.logger.debug("targetsite    :   pair")
+                self.logger.debug("targetsite    :   pair\n")
                 targetsite_for_coot = "'U',0,'U'"
         return targetsite_for_coot
 
@@ -280,9 +265,11 @@ class Manage():
                  self.beamtime_dir,
                  self.spacegroup,
                  self.cutoff_ios,
+                 self.flag_overwrite,
                  self.flag_molrep,
                  self.flag_coot,
-                 self.flag_overwrite,
+                 self.flag_phenix,
+                 self.flag_phaser,
                  self.flag_pr,
                  self.flag_sa,
                  self.flag_water,
@@ -296,7 +283,8 @@ class Manage():
                              self.beamtime_dir, self.template,
                              self.sequence, self.targetsite,
                              self.spacegroup,
-                             self.cutoff_ios, self.flag_pr)
+                             self.cutoff_ios,
+                             self.flag_phaser, self.flag_pr)
 
 
 #=================================================
@@ -307,36 +295,7 @@ if __name__  == '__main__':
     import peints_argparse
     args = sys.argv
     input_parser = peints_argparse.peints_argparse(args)
-
-    template = input_parser.model
-    sequence = input_parser.sequence
-    beamtime_dir = input_parser.beamtime_dir
-    targetsite = input_parser.targetsite
-    spacegroup = input_parser.spacegroup
-    data_name  = input_parser.data_name
-    if input_parser.skip_mr == False:
-        flag_molrep = "True"
-    else:
-        flag_molrep = "False"
-    if input_parser.no_png == False:
-        flag_coot = "True"
-    else:
-        flag_coot = "False"
-    if input_parser.phenix_refine == True:
-        flag_pr = "True"
-    else:
-        flag_pr = "False"
-    if input_parser.water == True:
-        flag_water = "True"
-    else:
-        flag_water = "False"
-    if input_parser.simulated_annealing == True:
-        flag_sa = "True"
-    else:
-        flag_sa = "False"
-
-    progdir = os.path.dirname(os.path.abspath(args[0]))
+    input_file = input_parser.input_file
     workdir = os.getcwd()
 
-    Manage(progdir, workdir, template, sequence, beamtime_dir, targetsite, spacegroup, data_name,
-                 flag_molrep, flag_coot, flag_pr, flag_water, flag_sa)
+    Manage(input_file)

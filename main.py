@@ -3,7 +3,7 @@
 import glob
 import os
 import shutil
-import datetime
+import datetime, time
 import subprocess
 from Bio import PDB
 parser = PDB.PDBParser()
@@ -12,9 +12,9 @@ import peints_result
 
 class Run():
     def __init__(self, logger, version, progdir, xds_dir, data_name, new_coot_lines, targetsite, targetsite_for_coot,
-                 template, sequence, beamtime_dir, spacegroup, cutoff_ios,
-                 flag_molrep, flag_coot,
-                 flag_overwrite, flag_pr, flag_sa, flag_water, cpu_num, xds_dirs, run_date):
+                 template, sequence, beamtime_dir, spacegroup, cutoff_ios, flag_overwrite,
+                 flag_molrep, flag_coot, flag_phenix, flag_phaser, flag_pr, flag_sa, flag_water,
+                 cpu_num, xds_dirs, run_date):
 
         self.logger = logger
         self.version = version
@@ -24,13 +24,15 @@ class Run():
         self.beamtime_dir = beamtime_dir
         self.spacegroup = spacegroup
         self.cutoff_ios = cutoff_ios
+        self.flag_overwrite = flag_overwrite
         self.data_name = data_name
         self.new_coot_lines = new_coot_lines
         self.targetsite = targetsite
         self.targetsite_for_coot = targetsite_for_coot
         self.flag_molrep = flag_molrep
         self.flag_coot = flag_coot
-        self.flag_overwrite = flag_overwrite
+        self.flag_phenix = flag_phenix
+        self.flag_phaser = flag_phaser
         self.flag_pr = flag_pr
         self.flag_water = flag_water
         self.flag_sa = flag_sa
@@ -39,6 +41,7 @@ class Run():
         self.run_date = run_date
 
         self.prep(xds_dir)
+        self.check(xds_dir)
         self.run(xds_dir)
 
     def prep(self, xds_dir):
@@ -47,9 +50,9 @@ class Run():
 
         peints_dirs = glob.glob("../peints_*_"+os.path.basename(xds_dir))
         run_num = len(peints_dirs)+1
-        if self.flag_overwrite == "False":
+        if str(self.flag_overwrite) == "False":
             pass
-        elif self.flag_overwrite == "True":
+        elif str(self.flag_overwrite) == "True":
             if run_num == 1:
                 run_num = 1
             else:
@@ -61,7 +64,6 @@ class Run():
         except:
             pass
 
-
         os.chdir(peints_dir)
         f = open("peints_coot.py", "w")
         f.write(self.new_coot_lines)
@@ -71,12 +73,136 @@ class Run():
         if self.template != self.template_name:
             shutil.copy(self.template, self.template_name)
 
-        if os.path.isfile(self.sequence):
+        if self.sequence != "":
             self.sequence_name = os.path.basename(self.sequence)
             if self.sequence != self.sequence_name:
                 shutil.copy(self.sequence, self.sequence_name)
 
+        self.xds_file = os.path.join(xds_dir, self.data_name)
+        if self.data_name == "XDS_ASCII.HKL":
+            files_list_in_xds_dir = glob.glob(os.path.join("../", os.path.basename(xds_dir), "XDS_*"))
+            self.logger.debug("files_list_in_xds_dir  :"+str(files_list_in_xds_dir))
+            xds_file = files_list_in_xds_dir[0]
+            if " " in xds_file:
+                shutil.copy(xds_file,"XDS_ASCII_1.HKL")
+                self.xds_file=os.path.abspath("XDS_ASCII_1.HKL")
+            else:
+                pass
+        else:
+            pass
+
+    def check(self, xds_dir):
+        self.sort_check_result = "FINE"
+        if self.data_name == "XDS_ASCII.HKL":
+            file_puck_id = self.xds_file.split("/")[-5]
+            file_crystal_id = self.xds_file.split("/")[-4]
+
+            f = open(self.xds_file, "r")
+            lines = f.readlines()
+            f.close()
+
+            for line in lines:
+                if line.startswith("!NAME_TEMPLATE_OF_DATA_FRAMES="):
+                    header_puck_id = line.split("/")[-4]
+                    header_crystal_id = line.split("/")[-3]
+                elif line.startswith("!DATA_RANGE="):
+                    break
+
+            file_id = file_puck_id + "/" + file_crystal_id
+            header_id = header_puck_id + "/" + header_crystal_id
+
+            if file_id == header_id:
+                self.sort_check_result = "FINE"
+            else:
+                self.sort_check_result = "WRONG: The file is "+header_id
+
+        else:
+            pass
+
+        f = open("sort_check_result.txt", "w")
+        f.write(self.sort_check_result)
+        f.close()
+
+
     def run(self, xds_dir):
+        if str(self.flag_phaser) == "True":
+            self.run_phaser(xds_dir)
+        elif str(self.flag_phaser) == "False":
+            self.run_molrep(xds_dir)
+        if str(self.flag_phenix) == "True":
+            self.run_phenix_refine(xds_dir)
+
+        os.chdir(self.beamtime_dir)
+        peints_result.result(self.logger, self.progdir,
+                             self.run_date, self.version,
+                             self.beamtime_dir, self.template,
+                             self.sequence, self.targetsite,
+                             self.spacegroup,
+                             self.cutoff_ios,
+                             self.flag_phaser, self.flag_pr)
+
+    def run_phaser(self, xds_dir):
+        maxreso = 0.5
+        n_asu = 1
+        cmd_xtriage = "phenix.xtriage "+os.path.join(xds_dir, self.data_name)+" "+self.sequence_name+\
+                      " log=xtriage.log skip_merging=true"
+        self.logger.debug("command for xtriage  :  "+str(cmd_xtriage))
+        p_xtriage = subprocess.Popen(cmd_xtriage, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        while True:
+            line = p_xtriage.stdout.readline()
+            if line.startswith(" Best guess :"):
+                n_asu = int(line.split()[3])
+            else:
+                pass
+            if not line and p_xtriage.poll() is not None:
+                break
+        cmd_reso = "dials.resolutionizer "+os.path.join(xds_dir, self.data_name)+\
+              " i_mean_over_sigma_mean="+str(self.cutoff_ios)+" | tee resolutionizer.log"
+        self.logger.debug("command for dials.resolutionizer  :  "+str(cmd_reso))
+        p_reso = subprocess.Popen(cmd_reso, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        while True:
+            line = p_reso.stdout.readline()
+            if line.startswith("Resolution Mn(I)/Mn(sig):"):
+                maxreso = float(line.split()[-1])
+            else:
+                pass
+            if not line and p_reso.poll() is not None:
+                break
+
+        cmd_convert = "phenix.reflection_file_converter "+os.path.join(xds_dir, self.xds_file)+\
+              " --resolution="+str(maxreso)+\
+              " --non_anomalous" \
+              " --write_mtz_amplitudes" \
+              " --mtz_root_label=F" \
+              " --generate_r_free_flags" \
+              " --r_free_flags_format=ccp4" \
+              " --mtz=MTZ.mtz | tee reflection_file_converter.log"
+        self.logger.debug("command for phenix.reflection_file converter  :  "+cmd_convert)
+        subprocess.call(cmd_convert, shell=True)
+
+        sg = ""
+        if self.spacegroup == "automatic":
+            sg = "SGALT SELECT ALL\n"
+        else:
+            sg = "SGALTERNATIVE SELECT LIST\n" \
+                 "SGALTERNATIVE TEST "+self.spacegroup+"\n"
+
+        cmd_phaser = "phenix.phaser <<EOF | tee phaser.log\n" \
+                     "MODE MR_Auto\n" \
+                     "HKLIN MTZ.mtz\n" \
+                     "LABIN F=F SIGF=SIGF FREE=R-free-flags\n" \
+                     "Resolution 50 """+str(maxreso)+"\n" \
+                     "ENSEMBLE model PDBFILE "+self.template_name+" IDENTITY 1.0\n" \
+                     "COMPOSITION PROTEIN SEQUENE "+self.sequence_name+" NUM "+str(n_asu)+"\n" \
+                     "SEARCH ENSEMBLE model\n" \
+                     "XYZOUT ON\n" \
+                     "HKLOUT ON\n"+ \
+                     sg+\
+                     "START\n" \
+                     "EOF\n"
+        subprocess.call(cmd_phaser, shell=True)
+
+    def run_molrep(self, xds_dir):
 
         reprocess_flag = self.re_process(self.spacegroup, xds_dir)
 
@@ -96,63 +222,56 @@ class Run():
         p_mr.wait()
         self.logger.debug(xds_dir+"  :  peints.sh  FINISH     "+str(datetime.datetime.now()))
 
-        output_pdb = "refmac1.pdb"
-        output_mtz = "refmac1.mtz"
 
-        files = os.listdir("./")
-        if output_pdb in files:
-            if self.flag_pr == "True":
-                cmd = "phenix.refine refmac1.mtz refmac1.pdb " \
-                      "sequence="+self.sequence_name + \
-                      " nproc="+str(int(self.cpu_num/len(self.xds_dirs))) + \
-                      " output.prefix=phenix" + \
-                      " simulated_annealing=" + str(self.flag_sa) + \
-                      " ordered_solvent=" + str(self.flag_water)
-                self.logger.debug("phenix.refine "+xds_dir+" started on "+str(datetime.datetime.now()))
-                p_pr = subprocess.Popen(cmd, shell=True)
-                p_pr.wait()
-                self.logger.debug(xds_dir+"  :  phenix.refine  FINISH     "+str(datetime.datetime.now()))
 
-                output_pdb = "phenix_001.pdb"
-                output_mtz = "phenix_001.mtz"
+    def run_phenix_refine(self, xds_dir):
+        cmd_sa = ""
+        if str(self.flag_sa) == "True":
+            cmd_sa = " simulated_annealing=True"
+        cmd_water = ""
+        if str(self.flag_water) == "False":
+            cmd_water = " ordered_solvent=True"
 
-            if self.flag_coot == "True":
-                if self.targetsite_for_coot == "'U',0,'U'":
-                    output_pdb_ed = self.put_pseudoatom(output_pdb)
-                else:
-                    output_pdb_ed = output_pdb
+        mtz = "refmac1.mtz"
+        pdb = "refmac1.pdb"
+        if str(self.flag_phaser) == "True":
+            mtz = "PHASER.1.mtz"
+            pdb = "PHASER.1.pdb"
 
-                cmd = "coot "+output_pdb_ed+" "+output_mtz+" --script peints_coot.py"
-                self.logger.debug("image capture "+xds_dir+" started on "+str(datetime.datetime.now()))
-                p_coot = subprocess.Popen(cmd, shell=True)
-                p_coot.wait()
-                self.logger.debug(xds_dir+"  :  image capture  FINISH     "+str(datetime.datetime.now()))
+        cmd_refine = "phenix.refine "+pdb+" "+mtz+" output.prefix=phenix " \
+                     "main.number_of_macro_cycle=3"+cmd_sa+cmd_water+" | tee REFINE.log"
+        p_pr = subprocess.Popen(cmd_refine, shell=True)
+        p_pr.wait()
 
-        else:
-            pass
+        output_pdb = "phenix_001.pdb"
+        output_mtz = "phenix_001.mtz"
 
-        os.chdir(self.beamtime_dir)
-        peints_result.result(self.logger, self.progdir,
-                             self.run_date, self.version,
-                             self.beamtime_dir, self.template,
-                             self.sequence, self.targetsite,
-                             self.spacegroup,
-                             self.cutoff_ios, self.flag_pr)
+        if self.flag_coot == "True":
+            if self.targetsite_for_coot == "'U',0,'U'":
+                output_pdb_ed = self.put_pseudoatom(output_pdb)
+            else:
+                output_pdb_ed = output_pdb
+
+            cmd_coot = "coot " + output_pdb_ed + " " + output_mtz + " --script peints_coot.py"
+            self.logger.debug("image capture " + xds_dir + " started on " + str(datetime.datetime.now()))
+            self.logger.debug("command for coot  :  "+cmd_coot)
+            subprocess.call(cmd_coot, shell=True)
+            self.logger.debug(xds_dir + "  :  image capture  FINISH     " + str(datetime.datetime.now()))
+
 
     def re_process(self, spacegroup, xds_dir):
         reprocess_flag = False
         if self.data_name != "aimless.mtz":
-            if spacegroup == "Spacegroup_suggested_by_POINTLESS":
+            if spacegroup == "automatic":
                 spacegroup = "none"
-            elif spacegroup != "Spacegroup_suggested_by_POINTLESS":
+            elif spacegroup != "automatic":
                 files = os.listdir(os.path.join("../", os.path.basename(xds_dir)))
                 self.logger.debug(files)
             reprocess_flag = self.pointless_aimless(spacegroup, xds_dir)
-
         else:
-            if spacegroup == "Spacegroup_suggested_by_POINTLESS":
+            if spacegroup == "automatic":
                 self.logger.debug(xds_dir+"   :   PEINTS doesn't re_process by POINTLESS")
-            elif spacegroup != "Spacegroup_suggested_by_POINTLESS":
+            elif spacegroup != "automatic":
                 files = os.listdir(os.path.join("../", os.path.basename(xds_dir)))
                 self.logger.debug(files)
                 if not os.path.join("pointless.log") in files:
@@ -172,19 +291,17 @@ class Run():
                         self.logger.debug(xds_dir+" input spacegroup was identical to spacegroup by PReMo")
                     else:
                         reprocess_flag = self.pointless_aimless(spacegroup, xds_dir)
-
         return reprocess_flag
 
 
     def pointless_aimless(self, spacegroup, xds_dir):
         self.logger.debug("Re-processing by pointless and aimless")
-
         if spacegroup == "none":
             sg_line = ""
         else:
             sg_line = "spacegroup "+spacegroup+"\n"
 
-        cmd = "pointless hklin "+ os.path.join("../", os.path.basename(xds_dir), "XDS_ASCII.HKL") + \
+        cmd = "pointless hklin "+self.xds_file+ \
                         " hklout pointless.mtz <<eof | tee pointless.log\n" + \
                         sg_line + \
                         "END\n" \
@@ -236,7 +353,7 @@ class Run():
             for sg_compo in sg_line_aimless:
                 self.sg_aimless += sg_compo
 
-        elif spacegroup != "Spacegroup_suggested_by_POINTLESS":
+        elif spacegroup != "automatic":
             self.sg_aimless = spacegroup
 
         reprocess_flag = True
@@ -257,8 +374,8 @@ class Run():
 
         structure = parser.get_structure("X", output_pdb)
         model = structure[0]
-        chain1 = model[chain_1]
-        chain2 = model[str(chain_2)]
+        chain1   = model[chain_1]
+        chain2   = model[str(chain_2)]
         residue1 = chain1[int(resi_1)]
         residue2 = chain2[int(resi_2)]
         coord_atom_1 = residue1[str(atom_1)].get_coord()
@@ -268,7 +385,7 @@ class Run():
         self.logger.debug("Coordinate targetsite_2  :  " + str(coord_atom_2))
 
         middle = (coord_atom_1 + coord_atom_2)/2
-        self.logger.debug("Coordinate middle_point  :  "+str(middle))
+        self.logger.debug("Coodinate middle_point  :  "+str(middle))
 
         model = structure.get_list()
         chains = model[0].get_list()
