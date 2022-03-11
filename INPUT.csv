@@ -1,2 +1,2 @@
 progdir,template,beamtime_directory,sequence,spacegroup,targetsite,cutoff_ios,data_name,flag_molrep,flag_coot,flag_skip_processed_data,flag_overwrite,flag_phenix,flag_phaser,flag_pr,flag_water,flag_sa
-/Users/chem2/Desktop/development/PEINTS/PEINTS_ver.2.1.0,/Users/chem2/Desktop/crystallography/FRK/template/FRK_FES-1043_dellig_A.pdb,/Users/chem2/Desktop/crystallography/FRK/2022-02-16_BL-1A,/Users/chem2/Desktop/crystallography/FRK/template/FRK_KD-His_AAseq.txt,P212121,A/260/CB_A/361/CD1,1.5,XDS_ASCII.HKL,True,True,True,False,True,False,True,True,True
+,,,,,,1.5,XDS_ASCII.HKL,TRUE,TRUE,TRUE,FALSE,TRUE,FALSE,TRUE,TRUE,TRUE
