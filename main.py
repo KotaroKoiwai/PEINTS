@@ -222,7 +222,20 @@ class Run():
         p_mr.wait()
         self.logger.debug(xds_dir+"  :  peints.sh  FINISH     "+str(datetime.datetime.now()))
 
+        if self.flag_coot == "True":
+            output_pdb = "refmac1.pdb"
+            output_mtz = "refmac1.mtz"
 
+            if self.targetsite_for_coot == "'U',0,'U'":
+                output_pdb_ed = self.put_pseudoatom(output_pdb)
+            else:
+                output_pdb_ed = output_pdb
+
+            cmd_coot = "coot " + output_pdb_ed + " " + output_mtz + " --script peints_coot.py"
+            self.logger.debug("image capture " + xds_dir + " started on " + str(datetime.datetime.now()))
+            self.logger.debug("command for coot  :  "+cmd_coot)
+            subprocess.call(cmd_coot, shell=True)
+            self.logger.debug(xds_dir + "  :  image capture  FINISH     " + str(datetime.datetime.now()))
 
     def run_phenix_refine(self, xds_dir):
         cmd_sa = ""
